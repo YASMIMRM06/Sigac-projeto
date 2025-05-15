@@ -1,104 +1,71 @@
 <?php
-// app/Http/Controllers/ComprovanteController.php
 
 namespace App\Http\Controllers;
 
 use App\Models\Comprovante;
+use App\Models\Categoria;
+use App\Models\Aluno;
 use Illuminate\Http\Request;
 
 class ComprovanteController extends Controller
 {
-    /**
-     * Lista todos comprovantes com relacionamentos
-     */
     public function index()
     {
-        $comprovantes = Comprovante::with(['aluno', 'categoria', 'user'])
-            ->orderByDesc('created_at')
-            ->paginate(10);
-
-        return response()->json($comprovantes);
+        $comprovantes = Comprovante::with(['categoria', 'aluno'])->get();
+        return view('comprovantes.index', compact('comprovantes'));
     }
 
-    /**
-     * Cria novo comprovante
-     */
+    public function create()
+    {
+        $categorias = Categoria::all();
+        $alunos = Aluno::all();
+        return view('comprovantes.create', compact('categorias', 'alunos'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
-            'horas' => 'required|numeric|min:0',
             'atividade' => 'required|string|max:255',
-            'categoria_id' => 'required|exists:categories,id',
+            'horas' => 'required|integer|min:0',
+            'categoria_id' => 'required|exists:categorias,id',
             'aluno_id' => 'required|exists:alunos,id',
-            'user_id' => 'required|exists:users,id'
         ]);
 
-        $comprovante = Comprovante::create($request->all());
+        Comprovante::create($request->all());
 
-        return response()->json($comprovante, 201);
+        return redirect()->route('comprovantes.index')->with('success', 'Comprovante criado com sucesso!');
     }
 
-    /**
-     * Mostra um comprovante específico
-     */
-    public function show($id)
+    public function show(Comprovante $comprovante)
     {
-        $comprovante = Comprovante::with(['aluno', 'categoria', 'user'])
-            ->findOrFail($id);
-
-        return response()->json($comprovante);
+        $comprovante->load(['categoria', 'aluno']);
+        return view('comprovantes.show', compact('comprovante'));
     }
 
-    /**
-     * Atualiza um comprovante
-     */
-    public function update(Request $request, $id)
+    public function edit(Comprovante $comprovante)
     {
-        $comprovante = Comprovante::findOrFail($id);
+        $categorias = Categoria::all();
+        $alunos = Aluno::all();
+        return view('comprovantes.edit', compact('comprovante', 'categorias', 'alunos'));
+    }
 
+    public function update(Request $request, Comprovante $comprovante)
+    {
         $request->validate([
-            'horas' => 'sometimes|numeric|min:0',
-            'atividade' => 'sometimes|string|max:255',
-            'categoria_id' => 'sometimes|exists:categories,id'
+            'atividade' => 'required|string|max:255',
+            'horas' => 'required|integer|min:1',
+            'categoria_id' => 'required|exists:categorias,id',
+            'aluno_id' => 'required|exists:alunos,id',
         ]);
 
         $comprovante->update($request->all());
 
-        return response()->json($comprovante);
+        return redirect()->route('comprovantes.index')->with('success', 'Comprovante atualizado com sucesso!');
     }
 
-    /**
-     * Remove um comprovante (soft delete)
-     */
-    public function destroy($id)
+    public function destroy(Comprovante $comprovante)
     {
-        $comprovante = Comprovante::findOrFail($id);
         $comprovante->delete();
-
-        return response()->json(null, 204);
-    }
-
-    /**
-     * Restaura comprovante excluído
-     */
-    public function restore($id)
-    {
-        $comprovante = Comprovante::withTrashed()->findOrFail($id);
-        $comprovante->restore();
-
-        return response()->json($comprovante);
-    }
-
-    /**
-     * Lista comprovantes de um aluno específico
-     */
-    public function porAluno($alunoId)
-    {
-        $comprovantes = Comprovante::where('aluno_id', $alunoId)
-            ->with(['categoria'])
-            ->orderByDesc('created_at')
-            ->get();
-
-        return response()->json($comprovantes);
+        return redirect()->route('comprovantes.index')->with('success', 'Comprovante excluído com sucesso!');
     }
 }

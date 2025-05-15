@@ -1,106 +1,94 @@
 <?php
-// app/Http/Controllers/CursoController.php
 
 namespace App\Http\Controllers;
 
-use App\Models\Curso;
 use Illuminate\Http\Request;
+use App\Models\Curso;
+use App\Models\Turma;
+use App\Models\Nivel;
 
 class CursoController extends Controller
 {
-    /**
-     * Lista todos cursos com níveis e eixos
-     */
+    
     public function index()
     {
-        $cursos = Curso::with(['nivel', 'eixo'])
-            ->orderBy('nome')
-            ->paginate(10);
-
-        return response()->json($cursos);
+        $cursos = Curso::with('nivel')->get();
+        return view('cursos.index', compact('cursos'));
     }
 
-    /**
-     * Cria novo curso
-     */
+
+    
+    public function create()
+    {
+        $turmas = Turma::all();
+        $nivels = Nivel::all();
+        return view('cursos.create', compact('turmas', 'nivels'));
+    }
+
+    
     public function store(Request $request)
     {
         $request->validate([
-            'nome' => 'required|string|max:150',
+            'nome' => 'required|string|max:255',
             'sigla' => 'required|string|max:10',
-            'total_horas' => 'required|numeric|min:0',
-            'nivel_id' => 'required|exists:nivels,id',
-            'eixo_id' => 'required|exists:eixos,id'
+            'nivel_id' => 'required|exists:nivels,id',  
+            'total_horas' => 'required|integer',
         ]);
 
-        $curso = Curso::create($request->all());
 
-        return response()->json($curso, 201);
+
+        Curso::create([
+            'nome' => $request->nome,
+            'sigla' => $request->sigla,
+            'nivel_id' => $request->nivel_id,
+            'total_horas' => $request->total_horas,
+        ]);
+
+        return redirect()->route('cursos.index')->with('success', 'Curso criado com sucesso!');
     }
 
-    /**
-     * Mostra um curso específico
-     */
-    public function show($id)
+
+    public function show(string $id)
     {
-        $curso = Curso::with(['nivel', 'eixo', 'turmas', 'alunos'])
-            ->findOrFail($id);
-
-        return response()->json($curso);
+        $curso = Curso::with('nivel')->findOrFail($id);
+        return view('cursos.show', compact('curso'));
     }
 
-    /**
-     * Atualiza um curso
-     */
-    public function update(Request $request, $id)
+    
+    public function edit(string $id)
     {
         $curso = Curso::findOrFail($id);
-
-        $request->validate([
-            'nome' => 'sometimes|string|max:150',
-            'sigla' => 'sometimes|string|max:10',
-            'total_horas' => 'sometimes|numeric|min:0',
-            'nivel_id' => 'sometimes|exists:nivels,id',
-            'eixo_id' => 'sometimes|exists:eixos,id'
-        ]);
-
-        $curso->update($request->all());
-
-        return response()->json($curso);
+        $turmas = Turma::all();
+        $nivels = Nivel::all();
+        return view('cursos.edit', compact('curso', 'turmas', 'nivels'));
     }
 
-    /**
-     * Remove um curso (soft delete)
-     */
-    public function destroy($id)
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nome' => 'required|string|max:255',
+            'sigla' => 'required|string|max:10',
+            'nivel_id' => 'required|exists:nivels,id',
+            'total_horas' => 'required|integer',
+        ]);
+
+        $curso = Curso::findOrFail($id);
+        $curso->update([
+            'nome' => $request->nome,
+            'sigla' => $request->sigla,
+            'nivel_id' => $request->nivel_id,
+            'total_horas' => $request->total_horas,
+        ]);
+
+        return redirect()->route('cursos.index')->with('success', 'Curso atualizado com sucesso!');
+    }
+    
+    public function destroy(string $id)
     {
         $curso = Curso::findOrFail($id);
         $curso->delete();
 
-        return response()->json(null, 204);
-    }
-
-    /**
-     * Restaura curso excluído
-     */
-    public function restore($id)
-    {
-        $curso = Curso::withTrashed()->findOrFail($id);
-        $curso->restore();
-
-        return response()->json($curso);
-    }
-
-    /**
-     * Lista cursos por eixo
-     */
-    public function porEixo($eixoId)
-    {
-        $cursos = Curso::where('eixo_id', $eixoId)
-            ->with(['nivel'])
-            ->orderBy('nome')
-            ->get();
-
-        return response()->json($cursos);
+        return redirect()->route('cursos.index')->with('success', 'Curso excluído com sucesso!');
     }
 }

@@ -1,136 +1,104 @@
 <?php
-// app/Http/Controllers/AlunoController.php
 
 namespace App\Http\Controllers;
-
-use App\Models\Aluno;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
+use App\Models\Aluno;
+use App\Models\Curso;
+use App\Models\Turma;
+
+
 
 class AlunoController extends Controller
 {
-    /**
-     * Mostra todos os alunos cadastrados no sistema
-     * Com paginação de 10 registros por página
-     */
+   
     public function index()
     {
-        // Carrega os relacionamentos para evitar muitas queries (problema N+1)
-        $alunos = Aluno::with(['curso', 'turma', 'user'])
-            ->orderBy('nome') // Ordena por nome
-            ->paginate(10); // Paginação
-
-        return response()->json($alunos);
+        $alunos = Aluno::all();
+        return view('alunos.index')->with('alunos', $alunos);
     }
 
-    /**
-     * Cria um novo aluno no sistema
-     * Valida os dados antes de criar
-     */
-    public function store(Request $request)
+        public function create()
     {
-        // Validação dos dados
-        $request->validate([
-            'nome' => 'required|string|max:150',
-            'cpf' => 'required|string|size:11|unique:alunos',
-            'email' => 'required|email|unique:alunos',
-            'senha' => 'required|string|min:6',
-            'curso_id' => 'required|exists:cursos,id',
-            'turma_id' => 'required|exists:turmas,id',
-            'user_id' => 'required|exists:users,id'
-        ]);
-
-        // Criptografa a senha antes de salvar
-        $dados = $request->all();
-        $dados['senha'] = Hash::make($request->senha);
-
-        // Cria o aluno
-        $aluno = Aluno::create($dados);
-
-        // Retorna o aluno criado com status 201 (Created)
-        return response()->json($aluno, 201);
+        $cursos = Curso::all();   
+        $turmas = Turma::all();
+        return view('alunos.create', compact('cursos', 'turmas')); 
     }
+public function store(Request $request)
+{
+    $request->validate([
+        'nome' => 'required|string|max:255',
+        'cpf' => 'required|string|max:14', 
+        'email' => 'required|string|email|max:255|unique:alunos',
+        'senha' => 'required|string|max:255',
+        'turma_id' => 'required|exists:turmas,id', 
+        'curso_id' => 'required|exists:cursos,id',
+    ]);
 
-    /**
-     * Mostra os detalhes de um aluno específico
-     */
-    public function show($id)
-    {
-        // Busca o aluno ou retorna 404 se não encontrar
-        $aluno = Aluno::with(['curso', 'turma', 'user'])
-            ->findOrFail($id);
+    Aluno::create([
+        'nome' => $request->nome,
+        'cpf' => $request->cpf,
+        'email' => $request->email,
+        'senha' => Hash::make($request->senha),
+        'turma_id' => $request->turma_id,
+        'curso_id' => $request->curso_id,
+        
+    ]);
 
-        return response()->json($aluno);
-    }
+    return redirect()->route('alunos.index')->with('success', 'Aluno criado com sucesso.');
+}
 
-    /**
-     * Atualiza os dados de um aluno
-     */
-    public function update(Request $request, $id)
+   
+    public function show(string $id)
     {
         $aluno = Aluno::findOrFail($id);
-
-        // Validação (cpf e email são únicos, mas ignorando o próprio registro)
-        $request->validate([
-            'nome' => 'sometimes|string|max:150',
-            'cpf' => 'sometimes|string|size:11|unique:alunos,cpf,'.$aluno->id,
-            'email' => 'sometimes|email|unique:alunos,email,'.$aluno->id,
-            'senha' => 'sometimes|string|min:6',
-            'curso_id' => 'sometimes|exists:cursos,id',
-            'turma_id' => 'sometimes|exists:turmas,id'
-        ]);
-
-        // Atualiza os dados
-        $aluno->update($request->all());
-
-        return response()->json($aluno);
+        return view('alunos.show')->with('aluno', $aluno);
     }
 
-    /**
-     * Remove um aluno (soft delete)
-     */
-    public function destroy($id)
+   
+    public function edit(string $id)
     {
         $aluno = Aluno::findOrFail($id);
-        $aluno->delete(); // Soft delete
-
-        // Retorna resposta vazia com status 204 (No Content)
-        return response()->json(null, 204);
+        $turmas = Turma::all(); 
+        $cursos = Curso::all(); 
+        return view('alunos.edit', compact('aluno', 'turmas', 'cursos'));
     }
 
-    /**
-     * Restaura um aluno que foi excluído
-     */
-    public function restore($id)
-    {
-        $aluno = Aluno::withTrashed()->findOrFail($id);
-        $aluno->restore();
+    
+   public function update(Request $request, $id)
+{
+    $request->validate([
+        'nome' => 'required|string|max:255',
+        'cpf' => 'required|string|max:14',
+        'email' => 'required|email',
+        'turma_id' => 'required|integer|exists:turmas,id',
+        'curso_id' => 'required|integer|exists:cursos,id', 
+        'senha' => 'nullable|string|min:6'
+    ]);
 
-        return response()->json($aluno);
+    $aluno = Aluno::findOrFail($id);
+
+    $aluno->nome = $request->nome;
+    $aluno->cpf = $request->cpf;
+    $aluno->email = $request->email;
+    $aluno->turma_id = $request->turma_id;
+    $aluno->curso_id = $request->curso_id;
+
+    if ($request->filled('senha')) {
+        $aluno->senha = Hash::make($request->senha);
     }
 
-    /**
-     * Busca alunos por nome, CPF ou email
-     */
-    public function search(Request $request)
+    $aluno->save();
+
+    return redirect()->route('alunos.index')->with('success', 'Aluno atualizado com sucesso!');
+}
+
+   
+    public function destroy(string $id)
     {
-        $query = Aluno::query();
+        $aluno = Aluno::findOrFail($id);
+        $aluno->delete();
 
-        if ($request->nome) {
-            $query->where('nome', 'like', '%'.$request->nome.'%');
-        }
-
-        if ($request->cpf) {
-            $query->where('cpf', $request->cpf);
-        }
-
-        if ($request->email) {
-            $query->where('email', $request->email);
-        }
-
-        $alunos = $query->with(['curso', 'turma'])
-            ->paginate(10);
-
-        return response()->json($alunos);
+        return redirect()->route('alunos.index')->with('success', 'Aluno excluído com sucesso.');
     }
 }

@@ -1,26 +1,32 @@
 <?php
-// database/seeders/DatabaseSeeder.php
 
 namespace Database\Seeders;
 
+use App\Models\Aluno;
+use App\Models\Turma;
+use App\Models\User;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
     {
-        // Ordem correta para evitar erros de relacionamento
-        $this->call([
-            NivelSeeder::class,
-            EixoSeeder::class,
-            CursoSeeder::class,
-            TurmaSeeder::class,
-            CategoriaSeeder::class,
-            // UserSeeder::class, // Se existir
-            AlunoSeeder::class,
-            ComprovanteSeeder::class,
-            // DocumentoSeeder::class, // Se necessário
-            // DeclaracaoSeeder::class, // Se necessário
+        Aluno::create([
+            'nome'=>'Carol',
+            'cpf'=>'12345678900',
+            'email'=>'carol@gmail.com',
+            'senha'=>'12345678',
+            'turma_id' => 1,
+            'curso_id' => 1,
+        ]);
+
+        Turma::create([
+            'ano' => 2005,
+            'curso_id' => 1,
         ]);
     }
 }

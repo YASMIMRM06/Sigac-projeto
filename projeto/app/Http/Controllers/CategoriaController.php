@@ -1,136 +1,95 @@
 <?php
-// app/Http/Controllers/AlunoController.php
 
 namespace App\Http\Controllers;
 
-use App\Models\Aluno;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Categoria;
 
-class AlunoController extends Controller
+class CategoriaController extends Controller
 {
-    /**
-     * Mostra todos os alunos cadastrados no sistema
-     * Com paginação de 10 registros por página
-     */
+    
     public function index()
     {
-        // Carrega os relacionamentos para evitar muitas queries (problema N+1)
-        $alunos = Aluno::with(['curso', 'turma', 'user'])
-            ->orderBy('nome') // Ordena por nome
-            ->paginate(10); // Paginação
 
-        return response()->json($alunos);
+        $categorias = Categoria::with('curso')->get();
+        return view('categorias.index', compact('categorias'));
     }
 
-    /**
-     * Cria um novo aluno no sistema
-     * Valida os dados antes de criar
-     */
+
+    
+    public function create()
+    {
+        $cursos = \App\Models\Curso::all();
+        return view('categorias.create', compact('cursos'));
+    }
+
+  
     public function store(Request $request)
     {
-        // Validação dos dados
+
         $request->validate([
-            'nome' => 'required|string|max:150',
-            'cpf' => 'required|string|size:11|unique:alunos',
-            'email' => 'required|email|unique:alunos',
-            'senha' => 'required|string|min:6',
+            'nome' => 'required|string|max:255|unique:categorias',
+            'max_horas' => 'required|numeric|min:0',
             'curso_id' => 'required|exists:cursos,id',
-            'turma_id' => 'required|exists:turmas,id',
-            'user_id' => 'required|exists:users,id'
         ]);
 
-        // Criptografa a senha antes de salvar
-        $dados = $request->all();
-        $dados['senha'] = Hash::make($request->senha);
 
-        // Cria o aluno
-        $aluno = Aluno::create($dados);
+        Categoria::create([
+            'nome' => $request->nome,
+            'max_horas' => $request->max_horas,
+            'curso_id' => $request->curso_id,
+        ]);
 
-        // Retorna o aluno criado com status 201 (Created)
-        return response()->json($aluno, 201);
+
+        return redirect()->route('categorias.index')->with('success', 'Categoria criada com sucesso!');
     }
 
-    /**
-     * Mostra os detalhes de um aluno específico
-     */
-    public function show($id)
+    
+    public function show(string $id)
     {
-        // Busca o aluno ou retorna 404 se não encontrar
-        $aluno = Aluno::with(['curso', 'turma', 'user'])
-            ->findOrFail($id);
-
-        return response()->json($aluno);
+        $categoria = Categoria::findOrFail($id);
+        return view('categorias.show', compact('categoria'));
     }
 
-    /**
-     * Atualiza os dados de um aluno
-     */
-    public function update(Request $request, $id)
+    
+    public function edit(string $id)
     {
-        $aluno = Aluno::findOrFail($id);
+        $categoria = Categoria::findOrFail($id);
+        $cursos = \App\Models\Curso::all();
 
-        // Validação (cpf e email são únicos, mas ignorando o próprio registro)
+        return view('categorias.edit', compact('categoria', 'cursos'));
+    }
+
+
+    public function update(Request $request, string $id)
+    {
         $request->validate([
-            'nome' => 'sometimes|string|max:150',
-            'cpf' => 'sometimes|string|size:11|unique:alunos,cpf,'.$aluno->id,
-            'email' => 'sometimes|email|unique:alunos,email,'.$aluno->id,
-            'senha' => 'sometimes|string|min:6',
-            'curso_id' => 'sometimes|exists:cursos,id',
-            'turma_id' => 'sometimes|exists:turmas,id'
+            'nome' => 'required|string|max:255',
+            'max_horas' => 'nullable|integer|min:0',
         ]);
 
-        // Atualiza os dados
-        $aluno->update($request->all());
+        $categoria = Categoria::findOrFail($id);
 
-        return response()->json($aluno);
+
+        $max_horas = $request->input('max_horas') !== null ? $request->input('max_horas') : 0;
+
+        $categoria->update([
+            'nome' => $request->input('nome'),
+            'max_horas' => $max_horas,
+        ]);
+
+        return redirect()->route('categorias.show', $categoria->id)
+            ->with('success', 'Categoria atualizada com sucesso!');
     }
 
-    /**
-     * Remove um aluno (soft delete)
-     */
-    public function destroy($id)
+    public function destroy(string $id)
     {
-        $aluno = Aluno::findOrFail($id);
-        $aluno->delete(); // Soft delete
+        $categoria = Categoria::findOrFail($id);
 
-        // Retorna resposta vazia com status 204 (No Content)
-        return response()->json(null, 204);
-    }
+        $categoria->delete();
 
-    /**
-     * Restaura um aluno que foi excluído
-     */
-    public function restore($id)
-    {
-        $aluno = Aluno::withTrashed()->findOrFail($id);
-        $aluno->restore();
 
-        return response()->json($aluno);
-    }
-
-    /**
-     * Busca alunos por nome, CPF ou email
-     */
-    public function search(Request $request)
-    {
-        $query = Aluno::query();
-
-        if ($request->nome) {
-            $query->where('nome', 'like', '%'.$request->nome.'%');
-        }
-
-        if ($request->cpf) {
-            $query->where('cpf', $request->cpf);
-        }
-
-        if ($request->email) {
-            $query->where('email', $request->email);
-        }
-
-        $alunos = $query->with(['curso', 'turma'])
-            ->paginate(10);
-
-        return response()->json($alunos);
+        return redirect()->route('categorias.index')
+            ->with('success', 'Categoria deletada com sucesso!');
     }
 }

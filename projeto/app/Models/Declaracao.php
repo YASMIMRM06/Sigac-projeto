@@ -1,37 +1,21 @@
 <?php
-// app/Models/Declaracao.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Aluno;
+use App\Models\Comprovante;
 
 class Declaracao extends Model
 {
-    use SoftDeletes;
+    protected $table = 'declaracoes';
+    protected $fillable = ['hash', 'data', 'aluno_id', 'comprovante_id'];
 
-    protected $fillable = [
-        'hash',
-        'data',
-        'aluno_id',
-        'comprovante_id'
-    ];
-
-    // Define que o campo 'data' deve ser tratado como datetime
-    protected $casts = [
-        'data' => 'datetime'
-    ];
-
-    // Relacionamento: Uma declaração pertence a um aluno
-    public function aluno(): BelongsTo
-    {
+    public function aluno(){
         return $this->belongsTo(Aluno::class);
     }
 
-    // Relacionamento: Uma declaração pertence a um comprovante
-    public function comprovante(): BelongsTo
-    {
+    public function comprovante(){
         return $this->belongsTo(Comprovante::class);
     }
 }

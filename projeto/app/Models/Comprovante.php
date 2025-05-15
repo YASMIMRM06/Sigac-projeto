@@ -1,46 +1,26 @@
 <?php
-// app/Models/Comprovante.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Categoria;
+use App\Models\Aluno;
+use App\Models\Declaracao;
 
 class Comprovante extends Model
 {
-    use SoftDeletes;
+    protected $table = 'comprovantes';
+    protected $fillable = ['horas', 'atividade', 'categoria_id', 'aluno_id'];
 
-    protected $fillable = [
-        'horas',
-        'atividade',
-        'categoria_id',
-        'aluno_id',
-        'user_id'
-    ];
-
-    // Relacionamento: Um comprovante pertence a uma categoria
-    public function categoria(): BelongsTo
-    {
+    public function categoria(){
         return $this->belongsTo(Categoria::class);
     }
-
-    // Relacionamento: Um comprovante pertence a um aluno
-    public function aluno(): BelongsTo
-    {
+    
+    public function aluno(){
         return $this->belongsTo(Aluno::class);
     }
 
-    // Relacionamento: Um comprovante pertence a um usuário (quem registrou)
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    // Relacionamento: Um comprovante pode ter uma declaração
-    public function declaracao(): HasOne
-    {
-        return $this->hasOne(Declaracao::class);
+    public function declaracoes(){
+        return $this->hasMany(Declaracao::class); 
     }
 }

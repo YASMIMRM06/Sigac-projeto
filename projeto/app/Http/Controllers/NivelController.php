@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/NivelController.php
 
 namespace App\Http\Controllers;
 
@@ -8,76 +7,57 @@ use Illuminate\Http\Request;
 
 class NivelController extends Controller
 {
-    /**
-     * Lista todos níveis
-     */
     public function index()
     {
-        $niveis = Nivel::orderBy('nome')
-            ->paginate(10);
-
-        return response()->json($niveis);
+        $nivels = Nivel::all();
+        return view('nivels.index', compact('nivels'));
     }
 
-    /**
-     * Cria novo nível
-     */
+    public function create()
+    {
+        return view('nivels.create');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
-            'nome' => 'required|string|max:100|unique:nivels'
+            'nome' => 'required|string|min:3'
         ]);
 
-        $nivel = Nivel::create($request->all());
+        Nivel::create($request->all());
 
-        return response()->json($nivel, 201);
+        return redirect()->route('nivels.index')->with('success', 'Nível criado com sucesso.');
     }
 
-    /**
-     * Mostra um nível específico
-     */
-    public function show($id)
+    public function show(string $id)
     {
         $nivel = Nivel::findOrFail($id);
-
-        return response()->json($nivel);
+        return view('nivels.show', compact('nivel'));  
     }
 
-    /**
-     * Atualiza um nível
-     */
-    public function update(Request $request, $id)
+    public function edit(string $id)
     {
         $nivel = Nivel::findOrFail($id);
+        return view('nivels.edit', compact('nivel'));
+    }
 
+    public function update(Request $request, string $id)
+    {
         $request->validate([
-            'nome' => 'required|string|max:100|unique:nivels,nome,'.$id
+            'nome' => 'required|string|max:255',
         ]);
 
+        $nivel = Nivel::findOrFail($id);
         $nivel->update($request->all());
 
-        return response()->json($nivel);
+        return redirect()->route('nivels.index')->with('success', 'Nível atualizado com sucesso.');
     }
 
-    /**
-     * Remove um nível (soft delete)
-     */
     public function destroy($id)
     {
         $nivel = Nivel::findOrFail($id);
         $nivel->delete();
 
-        return response()->json(null, 204);
-    }
-
-    /**
-     * Restaura nível excluído
-     */
-    public function restore($id)
-    {
-        $nivel = Nivel::withTrashed()->findOrFail($id);
-        $nivel->restore();
-
-        return response()->json($nivel);
+        return redirect()->route('nivels.index')->with('success', 'Nível excluído com sucesso!');
     }
 }

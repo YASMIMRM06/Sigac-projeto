@@ -1,52 +1,31 @@
 <?php
-// app/Models/Curso.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Nivel;
+use App\Models\Categoria;
+use App\Models\Turma;
+use App\Models\Aluno;
 
 class Curso extends Model
 {
-    use SoftDeletes;
+    protected $table = 'cursos';
+    protected $fillable = ['nome', 'sigla', 'total_horas', 'nivel_id', 'turma_id'];
 
-    protected $fillable = [
-        'nome',
-        'sigla',
-        'total_horas',
-        'nivel_id',
-        'eixo_id'
-    ];
-
-    // Relacionamento: Um curso pertence a um nível
-    public function nivel(): BelongsTo
-    {
+    public function nivel(){
         return $this->belongsTo(Nivel::class);
     }
 
-    // Relacionamento: Um curso pertence a um eixo
-    public function eixo(): BelongsTo
-    {
-        return $this->belongsTo(Eixo::class);
-    }
-
-    // Relacionamento: Um curso pode ter muitas turmas
-    public function turmas(): HasMany
-    {
-        return $this->hasMany(Turma::class);
-    }
-
-    // Relacionamento: Um curso pode ter muitos alunos
-    public function alunos(): HasMany
-    {
-        return $this->hasMany(Aluno::class);
-    }
-
-    // Relacionamento: Um curso pode ter muitas categorias
-    public function categorias(): HasMany
-    {
+    public function categorias(){
         return $this->hasMany(Categoria::class);
+    }
+
+    public function turmas(){
+        return $this->belongsTo(Turma::class);
+    }
+
+    public function alunos(){
+        return $this->hasMany(Aluno::class);
     }
 }

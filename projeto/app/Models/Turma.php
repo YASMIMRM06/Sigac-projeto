@@ -1,31 +1,21 @@
 <?php
-// app/Models/Turma.php
 
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Curso;
+use App\Models\Aluno;
+
 
 class Turma extends Model
 {
-    use SoftDeletes;
+    protected $table = 'turmas';
+    protected $fillable = ['ano', 'curso_id', 'inicio', 'fim'];
 
-    protected $fillable = [
-        'curso_id',
-        'ano'
-    ];
-
-    // Relacionamento: Uma turma pertence a um curso
-    public function curso(): BelongsTo
-    {
+    public function curso(){
         return $this->belongsTo(Curso::class);
     }
 
-    // Relacionamento: Uma turma pode ter muitos alunos
-    public function alunos(): HasMany
-    {
+    public function alunos(){
         return $this->hasMany(Aluno::class);
     }
 }
